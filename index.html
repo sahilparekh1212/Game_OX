@@ -14,25 +14,30 @@
       * {
         box-sizing: border-box;
       }
+      html,
+      body {
+        height: 100%;
+        overflow: hidden; /* no horizontal or vertical scrollbars */
+      }
       body {
         margin: 0;
-        min-height: 100vh;
+        height: 100dvh;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: flex-start;
-        gap: 16px;
+        gap: 12px;
         font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
         background: radial-gradient(circle at 50% 0%, #1b2a4a 0%, #0a0f1e 60%);
         color: #e8eefc;
         user-select: none;
         -webkit-user-select: none;
-        padding: 22px 16px 32px;
+        padding: 14px 12px;
         overscroll-behavior: none;
       }
       h1 {
         margin: 0;
-        font-size: 22px;
+        font-size: 20px;
         font-weight: 600;
         letter-spacing: 5px;
         text-transform: uppercase;
@@ -43,10 +48,10 @@
       .panel {
         display: flex;
         flex-wrap: wrap;
-        gap: 14px 26px;
+        gap: 10px 22px;
         align-items: flex-start;
         justify-content: center;
-        padding: 12px 18px;
+        padding: 10px 16px;
         background: rgba(20, 30, 54, 0.6);
         border: 1px solid rgba(159, 208, 255, 0.15);
         border-radius: 12px;
@@ -54,7 +59,7 @@
       .group {
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: 5px;
         align-items: flex-start;
       }
       .group .label {
@@ -77,7 +82,7 @@
         color: #aebbd6;
         font: inherit;
         font-size: 13px;
-        padding: 6px 13px;
+        padding: 5px 12px;
         border-radius: 6px;
         cursor: pointer;
         transition: background 0.12s, color 0.12s;
@@ -90,23 +95,94 @@
         color: #ffffff;
       }
 
+      /* Game area: sidebar (scores + actions) beside the board on wide screens */
+      .layout {
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        gap: 20px;
+        min-height: 0;
+      }
+      .side {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 150px;
+        flex: none;
+      }
+      .score {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 8px 12px;
+        background: rgba(20, 30, 54, 0.6);
+        border: 1px solid rgba(159, 208, 255, 0.12);
+        border-radius: 10px;
+      }
+      .score-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #7d8bab;
+      }
+      .score-val {
+        font-size: 20px;
+        font-weight: 700;
+      }
+      .score.x .score-val {
+        color: #6fb1ff;
+      }
+      .score.o .score-val {
+        color: #ff8a5c;
+      }
+      .ctrl-btn {
+        appearance: none;
+        border: 1px solid rgba(159, 208, 255, 0.25);
+        background: #1a2848;
+        color: #dce7ff;
+        font: inherit;
+        font-size: 13px;
+        padding: 8px 14px;
+        border-radius: 9px;
+        cursor: pointer;
+        touch-action: manipulation;
+        width: 100%;
+      }
+      .ctrl-btn:hover {
+        background: #223662;
+      }
+      .ctrl-btn:active {
+        transform: translateY(1px);
+      }
+      .ctrl-btn.ghost {
+        background: transparent;
+      }
+
+      .main {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        min-height: 0;
+      }
       .status {
-        font-size: 18px;
+        font-size: 17px;
         font-weight: 600;
         color: #cfe0ff;
-        min-height: 24px;
+        min-height: 22px;
       }
       .status.over {
         color: #8effc4;
       }
 
-      /* Board */
+      /* Board — sized against the viewport so the page never scrolls */
       .board {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         grid-template-rows: repeat(3, 1fr);
         gap: 10px;
-        width: min(88vw, 400px);
+        width: clamp(220px, min(46vw, 100dvh - 250px), 400px);
         aspect-ratio: 1 / 1;
       }
       .cell {
@@ -115,7 +191,7 @@
         border-radius: 14px;
         background: #172444;
         color: #e8eefc;
-        font-size: clamp(38px, 15vw, 78px);
+        font-size: clamp(30px, 9vh, 72px);
         font-weight: 700;
         line-height: 1;
         display: flex;
@@ -146,74 +222,48 @@
         box-shadow: 0 0 0 2px rgba(159, 208, 255, 0.55), 0 0 22px rgba(111, 177, 255, 0.35);
       }
 
-      /* Scoreboard */
-      .scoreboard {
-        display: flex;
-        gap: 12px;
-      }
-      .score {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 2px;
-        min-width: 76px;
-        padding: 8px 12px;
-        background: rgba(20, 30, 54, 0.6);
-        border: 1px solid rgba(159, 208, 255, 0.12);
-        border-radius: 10px;
-      }
-      .score-label {
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        color: #7d8bab;
-      }
-      .score-val {
-        font-size: 22px;
-        font-weight: 700;
-      }
-      .score.x .score-val {
-        color: #6fb1ff;
-      }
-      .score.o .score-val {
-        color: #ff8a5c;
-      }
-
-      /* Controls */
-      .controls {
-        display: flex;
-        gap: 10px;
-      }
-      .ctrl-btn {
-        appearance: none;
-        border: 1px solid rgba(159, 208, 255, 0.25);
-        background: #1a2848;
-        color: #dce7ff;
-        font: inherit;
-        font-size: 14px;
-        padding: 9px 18px;
-        border-radius: 9px;
-        cursor: pointer;
-        touch-action: manipulation;
-      }
-      .ctrl-btn:hover {
-        background: #223662;
-      }
-      .ctrl-btn:active {
-        transform: translateY(1px);
-      }
-      .ctrl-btn.ghost {
-        background: transparent;
-      }
-
+      /* Narrow screens: scores + actions collapse into one inline row above the grid */
       @media (max-width: 640px) {
         body {
-          padding: 14px 12px 24px;
-          gap: 12px;
+          padding: 10px 10px;
+          gap: 10px;
         }
         h1 {
-          font-size: 18px;
+          font-size: 17px;
           letter-spacing: 4px;
+        }
+        .layout {
+          flex-direction: column;
+          align-items: center;
+          gap: 10px;
+        }
+        .side {
+          flex-direction: row;
+          flex-wrap: wrap;
+          justify-content: center;
+          align-items: stretch;
+          width: auto;
+          gap: 6px;
+        }
+        .score {
+          flex-direction: column;
+          gap: 0;
+          padding: 5px 10px;
+          min-width: 64px;
+        }
+        .score-val {
+          font-size: 17px;
+        }
+        .ctrl-btn {
+          width: auto;
+          font-size: 12px;
+          padding: 7px 10px;
+        }
+        .board {
+          width: clamp(200px, min(88vw, 100dvh - 330px), 400px);
+        }
+        .cell {
+          font-size: clamp(26px, 12vw, 64px);
         }
       }
     </style>
@@ -248,29 +298,29 @@
       </div>
     </div>
 
-    <div class="scoreboard">
-      <div class="score x">
-        <span class="score-label" id="labelX">You (X)</span>
-        <span class="score-val" id="scoreX">0</span>
-      </div>
-      <div class="score draw">
-        <span class="score-label">Draws</span>
-        <span class="score-val" id="scoreDraw">0</span>
-      </div>
-      <div class="score o">
-        <span class="score-label" id="labelO">CPU (O)</span>
-        <span class="score-val" id="scoreO">0</span>
+    <div class="layout">
+      <aside class="side">
+        <div class="score x">
+          <span class="score-label" id="labelX">You (X)</span>
+          <span class="score-val" id="scoreX">0</span>
+        </div>
+        <div class="score draw">
+          <span class="score-label">Draws</span>
+          <span class="score-val" id="scoreDraw">0</span>
+        </div>
+        <div class="score o">
+          <span class="score-label" id="labelO">CPU (O)</span>
+          <span class="score-val" id="scoreO">0</span>
+        </div>
+        <button id="btn-new" class="ctrl-btn">New Game</button>
+        <button id="btn-reset" class="ctrl-btn ghost">Reset Score</button>
+      </aside>
+
+      <div class="main">
+        <div class="status" id="status">Your turn</div>
+        <div class="board" id="board"></div>
       </div>
     </div>
-
-    <div class="controls">
-      <button id="btn-new" class="ctrl-btn">New Game</button>
-      <button id="btn-reset" class="ctrl-btn ghost">Reset Score</button>
-    </div>
-
-    <div class="status" id="status">Your turn</div>
-
-    <div class="board" id="board"></div>
 
     <script type="module" src="/src/main.ts"></script>
   </body>
