@@ -1,4 +1,4 @@
-# Tic Tac Toe (TypeScript)
+# OX aka Tic Tac Toe (TypeScript)
 
 A clean, responsive Tic Tac Toe built with **TypeScript** + **Vite** — play a friend or the computer.
 

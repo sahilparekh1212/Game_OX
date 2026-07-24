@@ -6,7 +6,7 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
-    <title>Tic Tac Toe</title>
+    <title>OX aka Tic Tac Toe</title>
     <style>
       :root {
         color-scheme: dark;
@@ -37,11 +37,20 @@
       }
       h1 {
         margin: 0;
-        font-size: 20px;
-        font-weight: 600;
-        letter-spacing: 5px;
+        display: flex;
+        align-items: baseline;
+        gap: 10px;
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: 6px;
         text-transform: uppercase;
         color: #9fd0ff;
+      }
+      .h1-sub {
+        font-size: 11px;
+        font-weight: 500;
+        letter-spacing: 2.5px;
+        color: #7d8bab;
       }
 
       /* Setup panel — title over tiles */
@@ -95,40 +104,54 @@
         color: #ffffff;
       }
 
-      /* Game area: sidebar (scores + actions) beside the board on wide screens */
+      /* Game area: score sidebar beside the board on wide screens */
       .layout {
         display: flex;
-        align-items: flex-start;
+        align-items: center; /* sidebar centres vertically against the board */
         justify-content: center;
-        gap: 20px;
+        gap: 26px;
         min-height: 0;
       }
       .side {
         display: flex;
         flex-direction: column;
-        gap: 8px;
-        width: 150px;
+        gap: 12px;
+        width: 118px;
         flex: none;
       }
       .score {
         display: flex;
+        flex-direction: column;
         align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-        padding: 8px 12px;
+        justify-content: center;
+        gap: 3px;
+        padding: 12px 10px 10px;
         background: rgba(20, 30, 54, 0.6);
         border: 1px solid rgba(159, 208, 255, 0.12);
-        border-radius: 10px;
+        border-top: 3px solid rgba(159, 208, 255, 0.35);
+        border-radius: 12px;
+      }
+      .score.x {
+        border-top-color: #6fb1ff;
+      }
+      .score.o {
+        border-top-color: #ff8a5c;
       }
       .score-label {
         font-size: 11px;
         text-transform: uppercase;
         letter-spacing: 1px;
         color: #7d8bab;
+        text-align: center;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
       .score-val {
-        font-size: 20px;
+        font-size: 26px;
         font-weight: 700;
+        line-height: 1;
       }
       .score.x .score-val {
         color: #6fb1ff;
@@ -330,10 +353,6 @@
           padding: 10px 10px;
           gap: 10px;
         }
-        h1 {
-          font-size: 17px;
-          letter-spacing: 4px;
-        }
         .layout {
           flex-direction: column;
           align-items: center;
@@ -345,21 +364,23 @@
           justify-content: center;
           align-items: stretch;
           width: auto;
-          gap: 6px;
+          gap: 8px;
         }
         .score {
-          flex-direction: column;
-          gap: 0;
-          padding: 5px 10px;
-          min-width: 64px;
+          gap: 1px;
+          padding: 6px 12px 5px;
+          min-width: 72px;
         }
         .score-val {
-          font-size: 17px;
+          font-size: 18px;
         }
-        .ctrl-btn {
-          width: auto;
-          font-size: 12px;
-          padding: 7px 10px;
+        h1 {
+          font-size: 18px;
+          letter-spacing: 4px;
+        }
+        .h1-sub {
+          font-size: 10px;
+          letter-spacing: 2px;
         }
         .board {
           width: clamp(200px, min(88vw, 100dvh - 330px), 400px);
@@ -371,7 +392,7 @@
     </style>
   </head>
   <body>
-    <h1>Tic Tac Toe</h1>
+    <h1>OX <span class="h1-sub">aka Tic Tac Toe</span></h1>
 
     <div class="panel">
       <div class="group">
