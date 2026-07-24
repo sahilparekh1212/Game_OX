@@ -1,4 +1,4 @@
-import { TicTacToe, type Difficulty, type Mode, type Starter } from "./game.ts";
+import { TicTacToe, type Difficulty, type Mode, type Player, type Starter } from "./game.ts";
 
 const game = new TicTacToe();
 // Expose a handle for debugging in the console (harmless in production).
@@ -14,6 +14,15 @@ const labelOEl = document.getElementById("labelO") as HTMLElement;
 const groupDiff = document.getElementById("group-diff") as HTMLElement;
 const groupMark = document.getElementById("group-mark") as HTMLElement;
 const groupStarter = document.getElementById("group-starter") as HTMLElement;
+const groupNames = document.getElementById("group-names") as HTMLElement;
+const nameXInput = document.getElementById("nameX") as HTMLInputElement;
+const nameOInput = document.getElementById("nameO") as HTMLInputElement;
+
+/** Display name for a mark in 2-player mode (falls back to Player X / Player O). */
+function pname(p: Player): string {
+  const raw = p === "X" ? nameXInput.value : nameOInput.value;
+  return raw.trim() || (p === "X" ? "Player X" : "Player O");
+}
 
 // Build the 3x3 grid of cell buttons.
 const cells: HTMLButtonElement[] = [];
@@ -110,12 +119,36 @@ function render(): void {
   scoreXEl.textContent = String(game.scores.X);
   scoreOEl.textContent = String(game.scores.O);
   scoreDrawEl.textContent = String(game.scores.draws);
+
+  // End-of-round popup: appears shortly after the round ends (so the
+  // winning line stays visible for a beat), offering New Game / Reset Score.
+  if (game.over) {
+    if (endOverlay.hidden && endTimer === undefined) {
+      endTimer = window.setTimeout(() => {
+        endTimer = undefined;
+        endTitle.textContent = statusText();
+        endOverlay.hidden = false;
+      }, 900);
+    }
+  } else {
+    hideEndOverlay();
+  }
+}
+
+const endOverlay = document.getElementById("end-overlay") as HTMLElement;
+const endTitle = document.getElementById("end-title") as HTMLElement;
+let endTimer: number | undefined;
+
+function hideEndOverlay(): void {
+  window.clearTimeout(endTimer);
+  endTimer = undefined;
+  endOverlay.hidden = true;
 }
 
 function statusText(): string {
   if (game.winner) {
     if (game.mode === "cpu") return game.winner === game.human ? "You win! 🎉" : "Computer wins!";
-    return `${game.winner} wins! 🎉`;
+    return `${pname(game.winner)} wins! 🎉`;
   }
   if (game.draw) return "It's a draw!";
   if (game.mode === "cpu") {
@@ -125,7 +158,7 @@ function statusText(): string {
     }
     return game.current === game.human ? "Your turn" : "Computer thinking…";
   }
-  return `${game.current}'s turn`;
+  return `${pname(game.current)}'s turn`;
 }
 
 function syncLabels(): void {
@@ -134,12 +167,13 @@ function syncLabels(): void {
     labelXEl.textContent = game.human === "X" ? "You (X)" : "CPU (X)";
     labelOEl.textContent = game.human === "O" ? "You (O)" : "CPU (O)";
   } else {
-    labelXEl.textContent = "Player X";
-    labelOEl.textContent = "Player O";
+    labelXEl.textContent = pname("X");
+    labelOEl.textContent = pname("O");
   }
   groupDiff.style.display = cpu ? "" : "none";
   groupMark.style.display = cpu ? "" : "none";
   groupStarter.style.display = cpu ? "" : "none";
+  groupNames.style.display = cpu ? "none" : "";
 }
 
 // ---- Menu wiring -----------------------------------------------------------
@@ -179,16 +213,27 @@ wireSeg("starter", (btn) => {
   afterRoundReset();
 });
 
-document.getElementById("btn-new")?.addEventListener("click", () => {
+// End-popup actions: both start a fresh round; Reset Score also zeroes the tallies.
+document.getElementById("po-new")?.addEventListener("click", () => {
   window.clearTimeout(aiTimer);
   game.reset();
   afterRoundReset();
 });
 
-document.getElementById("btn-reset")?.addEventListener("click", () => {
+document.getElementById("po-reset")?.addEventListener("click", () => {
+  window.clearTimeout(aiTimer);
   game.resetScores();
-  render();
+  game.reset();
+  afterRoundReset();
 });
+
+// Live-update labels and status as names are typed (2-player mode).
+for (const input of [nameXInput, nameOInput]) {
+  input.addEventListener("input", () => {
+    syncLabels();
+    render();
+  });
+}
 
 syncLabels();
 render();

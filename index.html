@@ -176,6 +176,59 @@
         color: #8effc4;
       }
 
+      /* Player name inputs (2-player mode) */
+      .names {
+        display: flex;
+        gap: 6px;
+      }
+      .names input {
+        width: 104px;
+        padding: 6px 9px;
+        border-radius: 8px;
+        border: 1px solid rgba(159, 208, 255, 0.2);
+        background: #101a30;
+        color: #e8eefc;
+        font: inherit;
+        font-size: 13px;
+        user-select: text;
+        -webkit-user-select: text;
+      }
+      .names input:focus {
+        outline: none;
+        border-color: #3a6df0;
+      }
+
+      /* End-of-round popup */
+      .end-overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        background: rgba(6, 10, 22, 0.74);
+        border-radius: 14px;
+        z-index: 6;
+      }
+      .end-overlay[hidden] {
+        display: none;
+      }
+      .end-title {
+        font-size: 24px;
+        font-weight: 700;
+        color: #e8eefc;
+        text-align: center;
+        padding: 0 12px;
+      }
+      .end-actions {
+        display: flex;
+        gap: 10px;
+      }
+      .end-actions .ctrl-btn {
+        width: auto;
+      }
+
       /* Coin flip animation */
       .board-wrap {
         position: relative;
@@ -354,6 +407,14 @@
           <button data-starter="flip">🪙 Flip</button>
         </div>
       </div>
+
+      <div class="group" id="group-names" style="display: none">
+        <span class="label">Players</span>
+        <div class="names">
+          <input id="nameX" type="text" maxlength="12" placeholder="Player X" autocomplete="off" />
+          <input id="nameO" type="text" maxlength="12" placeholder="Player O" autocomplete="off" />
+        </div>
+      </div>
     </div>
 
     <div class="layout">
@@ -370,8 +431,6 @@
           <span class="score-label" id="labelO">CPU (O)</span>
           <span class="score-val" id="scoreO">0</span>
         </div>
-        <button id="btn-new" class="ctrl-btn">New Game</button>
-        <button id="btn-reset" class="ctrl-btn ghost">Reset Score</button>
       </aside>
 
       <div class="main">
@@ -382,6 +441,13 @@
             <div class="coin" id="coin">
               <div class="coin-face coin-front">YOU</div>
               <div class="coin-face coin-back">CPU</div>
+            </div>
+          </div>
+          <div class="end-overlay" id="end-overlay" hidden>
+            <div class="end-title" id="end-title"></div>
+            <div class="end-actions">
+              <button id="po-new" class="ctrl-btn">New Game</button>
+              <button id="po-reset" class="ctrl-btn ghost">Reset Score</button>
             </div>
           </div>
         </div>
