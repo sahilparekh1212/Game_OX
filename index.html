@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Tic Tac Toe</title>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 16px;
+        font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+        background: radial-gradient(circle at 50% 0%, #1b2a4a 0%, #0a0f1e 60%);
+        color: #e8eefc;
+        user-select: none;
+        -webkit-user-select: none;
+        padding: 22px 16px 32px;
+        overscroll-behavior: none;
+      }
+      h1 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 600;
+        letter-spacing: 5px;
+        text-transform: uppercase;
+        color: #9fd0ff;
+      }
+
+      /* Setup panel — title over tiles */
+      .panel {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 14px 26px;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 12px 18px;
+        background: rgba(20, 30, 54, 0.6);
+        border: 1px solid rgba(159, 208, 255, 0.15);
+        border-radius: 12px;
+      }
+      .group {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        align-items: flex-start;
+      }
+      .group .label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1.4px;
+        color: #7d8bab;
+      }
+      .seg {
+        display: inline-flex;
+        background: #101a30;
+        border-radius: 8px;
+        padding: 3px;
+        gap: 3px;
+      }
+      .seg button {
+        appearance: none;
+        border: none;
+        background: transparent;
+        color: #aebbd6;
+        font: inherit;
+        font-size: 13px;
+        padding: 6px 13px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.12s, color 0.12s;
+      }
+      .seg button:hover {
+        color: #e8eefc;
+      }
+      .seg button.active {
+        background: #3a6df0;
+        color: #ffffff;
+      }
+
+      .status {
+        font-size: 18px;
+        font-weight: 600;
+        color: #cfe0ff;
+        min-height: 24px;
+      }
+      .status.over {
+        color: #8effc4;
+      }
+
+      /* Board */
+      .board {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: repeat(3, 1fr);
+        gap: 10px;
+        width: min(88vw, 400px);
+        aspect-ratio: 1 / 1;
+      }
+      .cell {
+        appearance: none;
+        border: none;
+        border-radius: 14px;
+        background: #172444;
+        color: #e8eefc;
+        font-size: clamp(38px, 15vw, 78px);
+        font-weight: 700;
+        line-height: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: inset 0 0 0 1px rgba(159, 208, 255, 0.08);
+        transition: background 0.12s, transform 0.04s;
+        touch-action: manipulation;
+      }
+      .cell:hover:not(:disabled) {
+        background: #1e2f57;
+      }
+      .cell:active:not(:disabled) {
+        transform: scale(0.97);
+      }
+      .cell:disabled {
+        cursor: default;
+      }
+      .cell.x {
+        color: #6fb1ff;
+      }
+      .cell.o {
+        color: #ff8a5c;
+      }
+      .cell.win {
+        background: #2b4a86;
+        box-shadow: 0 0 0 2px rgba(159, 208, 255, 0.55), 0 0 22px rgba(111, 177, 255, 0.35);
+      }
+
+      /* Scoreboard */
+      .scoreboard {
+        display: flex;
+        gap: 12px;
+      }
+      .score {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        min-width: 76px;
+        padding: 8px 12px;
+        background: rgba(20, 30, 54, 0.6);
+        border: 1px solid rgba(159, 208, 255, 0.12);
+        border-radius: 10px;
+      }
+      .score-label {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #7d8bab;
+      }
+      .score-val {
+        font-size: 22px;
+        font-weight: 700;
+      }
+      .score.x .score-val {
+        color: #6fb1ff;
+      }
+      .score.o .score-val {
+        color: #ff8a5c;
+      }
+
+      /* Controls */
+      .controls {
+        display: flex;
+        gap: 10px;
+      }
+      .ctrl-btn {
+        appearance: none;
+        border: 1px solid rgba(159, 208, 255, 0.25);
+        background: #1a2848;
+        color: #dce7ff;
+        font: inherit;
+        font-size: 14px;
+        padding: 9px 18px;
+        border-radius: 9px;
+        cursor: pointer;
+        touch-action: manipulation;
+      }
+      .ctrl-btn:hover {
+        background: #223662;
+      }
+      .ctrl-btn:active {
+        transform: translateY(1px);
+      }
+      .ctrl-btn.ghost {
+        background: transparent;
+      }
+
+      @media (max-width: 640px) {
+        body {
+          padding: 14px 12px 24px;
+          gap: 12px;
+        }
+        h1 {
+          font-size: 18px;
+          letter-spacing: 4px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Tic Tac Toe</h1>
+
+    <div class="panel">
+      <div class="group">
+        <span class="label">Mode</span>
+        <div class="seg" id="mode">
+          <button data-mode="cpu" class="active">vs Computer</button>
+          <button data-mode="two">2 Players</button>
+        </div>
+      </div>
+
+      <div class="group" id="group-diff">
+        <span class="label">Difficulty</span>
+        <div class="seg" id="difficulty">
+          <button data-diff="easy">Easy</button>
+          <button data-diff="medium" class="active">Medium</button>
+          <button data-diff="hard">Hard</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="status" id="status">Your turn</div>
+
+    <div class="board" id="board"></div>
+
+    <div class="scoreboard">
+      <div class="score x">
+        <span class="score-label" id="labelX">You (X)</span>
+        <span class="score-val" id="scoreX">0</span>
+      </div>
+      <div class="score draw">
+        <span class="score-label">Draws</span>
+        <span class="score-val" id="scoreDraw">0</span>
+      </div>
+      <div class="score o">
+        <span class="score-label" id="labelO">CPU (O)</span>
+        <span class="score-val" id="scoreO">0</span>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button id="btn-new" class="ctrl-btn">New Game</button>
+      <button id="btn-reset" class="ctrl-btn ghost">Reset Score</button>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
