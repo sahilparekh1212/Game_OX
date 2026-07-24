@@ -1,11 +1,13 @@
 /**
- * Tic Tac Toe game logic.
+ * Tic Tac Toe game logic, generic over board size (3×3 or 4×4 — win by
+ * filling a full row, column, or diagonal).
  *
- * Two modes: "two" (two humans) and "cpu" (you = X, computer = O).
+ * Two modes: "two" (two humans) and "cpu" (you vs the computer).
  * Against the computer, difficulty controls how it picks moves:
  *   easy   – random
  *   medium – takes a win, blocks a loss, otherwise random
- *   hard   – minimax (optimal, unbeatable)
+ *   hard   – minimax; exact on 3×3 (unbeatable), depth-limited with
+ *            alpha–beta pruning and a line heuristic on 4×4
  */
 
 export type Player = "X" | "O";
@@ -13,17 +15,9 @@ export type Cell = Player | null;
 export type Difficulty = "easy" | "medium" | "hard";
 export type Mode = "two" | "cpu";
 export type Starter = "human" | "ai" | "flip";
+export type Size = 3 | 4;
 
-const LINES: number[][] = [
-  [0, 1, 2],
-  [3, 4, 5],
-  [6, 7, 8],
-  [0, 3, 6],
-  [1, 4, 7],
-  [2, 5, 8],
-  [0, 4, 8],
-  [2, 4, 6],
-];
+const WIN_SCORE = 100000; // terminal score, far above any heuristic value
 
 export interface Scores {
   X: number;
@@ -31,7 +25,19 @@ export interface Scores {
   draws: number;
 }
 
+/** All win lines (rows, columns, diagonals) for an n×n board. */
+function buildLines(n: number): number[][] {
+  const lines: number[][] = [];
+  for (let r = 0; r < n; r++) lines.push(Array.from({ length: n }, (_, c) => r * n + c));
+  for (let c = 0; c < n; c++) lines.push(Array.from({ length: n }, (_, r) => r * n + c));
+  lines.push(Array.from({ length: n }, (_, i) => i * n + i));
+  lines.push(Array.from({ length: n }, (_, i) => i * n + (n - 1 - i)));
+  return lines;
+}
+
 export class TicTacToe {
+  size: Size = 3;
+  private lines: number[][] = buildLines(3);
   board: Cell[] = Array(9).fill(null);
   current: Player = "X";
   mode: Mode = "cpu";
@@ -50,7 +56,7 @@ export class TicTacToe {
   }
 
   reset(): void {
-    this.board = Array(9).fill(null);
+    this.board = Array(this.size * this.size).fill(null);
     this.winner = null;
     this.winningLine = null;
     this.draw = false;
@@ -79,6 +85,13 @@ export class TicTacToe {
     this.difficulty = d;
   }
 
+  /** Switch between the 3×3 and 4×4 board. */
+  setSize(n: Size): void {
+    this.size = n;
+    this.lines = buildLines(n);
+    this.reset();
+  }
+
   /** Choose which mark the human plays in cpu mode. */
   setHumanMark(p: Player): void {
     this.human = p;
@@ -99,7 +112,7 @@ export class TicTacToe {
 
   /** Place the current player's mark at i (if legal). Returns whether it changed. */
   play(i: number): boolean {
-    if (this.over || i < 0 || i > 8 || this.board[i] !== null) return false;
+    if (this.over || i < 0 || i >= this.board.length || this.board[i] !== null) return false;
     this.board[i] = this.current;
     this.evaluate();
     if (!this.over) this.current = this.current === "X" ? "O" : "X";
@@ -114,12 +127,12 @@ export class TicTacToe {
   }
 
   private evaluate(): void {
-    for (const line of LINES) {
-      const [a, b, c] = line;
-      if (this.board[a] && this.board[a] === this.board[b] && this.board[a] === this.board[c]) {
-        this.winner = this.board[a];
+    for (const line of this.lines) {
+      const first = this.board[line[0]];
+      if (first && line.every((i) => this.board[i] === first)) {
+        this.winner = first;
         this.winningLine = line;
-        this.scores[this.winner] += 1;
+        this.scores[first] += 1;
         return;
       }
     }
@@ -141,7 +154,7 @@ export class TicTacToe {
 
   private emptyIndices(): number[] {
     const r: number[] = [];
-    for (let i = 0; i < 9; i++) if (this.board[i] === null) r.push(i);
+    for (let i = 0; i < this.board.length; i++) if (this.board[i] === null) r.push(i);
     return r;
   }
 
@@ -161,11 +174,16 @@ export class TicTacToe {
   private findWinning(p: Player): number {
     for (const i of this.emptyIndices()) {
       this.board[i] = p;
-      const won = LINES.some(([a, b, c]) => this.board[a] === p && this.board[b] === p && this.board[c] === p);
+      const won = this.lines.some((line) => line.every((j) => this.board[j] === p));
       this.board[i] = null;
       if (won) return i;
     }
     return -1;
+  }
+
+  /** Search depth: exhaustive on 3×3, capped on 4×4 (with heuristic cutoff). */
+  private maxDepth(): number {
+    return this.size === 3 ? Infinity : 5;
   }
 
   private minimaxMove(empties: number[]): number {
@@ -173,7 +191,7 @@ export class TicTacToe {
     let bestIdx = empties[0];
     for (const i of empties) {
       this.board[i] = this.ai;
-      const score = this.minimax(false, 1);
+      const score = this.minimax(false, 1, -Infinity, Infinity);
       this.board[i] = null;
       if (score > bestScore) {
         bestScore = score;
@@ -183,36 +201,57 @@ export class TicTacToe {
     return bestIdx;
   }
 
-  private minimax(isMax: boolean, depth: number): number {
+  private minimax(isMax: boolean, depth: number, alpha: number, beta: number): number {
     const w = this.winnerOf();
-    if (w === this.ai) return 10 - depth;
-    if (w === this.human) return depth - 10;
+    if (w === this.ai) return WIN_SCORE - depth;
+    if (w === this.human) return depth - WIN_SCORE;
     const empties = this.emptyIndices();
     if (empties.length === 0) return 0;
+    if (depth >= this.maxDepth()) return this.heuristic();
 
     if (isMax) {
       let best = -Infinity;
       for (const i of empties) {
         this.board[i] = this.ai;
-        best = Math.max(best, this.minimax(false, depth + 1));
+        best = Math.max(best, this.minimax(false, depth + 1, alpha, beta));
         this.board[i] = null;
+        alpha = Math.max(alpha, best);
+        if (beta <= alpha) break; // prune
       }
       return best;
     }
     let best = Infinity;
     for (const i of empties) {
       this.board[i] = this.human;
-      best = Math.min(best, this.minimax(true, depth + 1));
+      best = Math.min(best, this.minimax(true, depth + 1, alpha, beta));
       this.board[i] = null;
+      beta = Math.min(beta, best);
+      if (beta <= alpha) break; // prune
     }
     return best;
   }
 
-  private winnerOf(): Player | null {
-    for (const [a, b, c] of LINES) {
-      if (this.board[a] && this.board[a] === this.board[b] && this.board[a] === this.board[c]) {
-        return this.board[a];
+  /** Line-potential evaluation used at the 4×4 depth cutoff. */
+  private heuristic(): number {
+    let score = 0;
+    for (const line of this.lines) {
+      let mine = 0;
+      let theirs = 0;
+      for (const i of line) {
+        if (this.board[i] === this.ai) mine++;
+        else if (this.board[i] === this.human) theirs++;
       }
+      if (mine > 0 && theirs > 0) continue; // dead line
+      if (mine > 0) score += Math.pow(10, mine);
+      else if (theirs > 0) score -= Math.pow(10, theirs);
+    }
+    return score;
+  }
+
+  private winnerOf(): Player | null {
+    for (const line of this.lines) {
+      const first = this.board[line[0]];
+      if (first && line.every((i) => this.board[i] === first)) return first;
     }
     return null;
   }

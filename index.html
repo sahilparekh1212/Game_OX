@@ -346,6 +346,14 @@
         background: #2b4a86;
         box-shadow: 0 0 0 2px rgba(159, 208, 255, 0.55), 0 0 22px rgba(111, 177, 255, 0.35);
       }
+      /* 4×4: tighter gaps and smaller marks so the board stays the same size */
+      .board.size-4 {
+        gap: 8px;
+      }
+      .board.size-4 .cell {
+        font-size: clamp(20px, 6.5vh, 48px);
+        border-radius: 10px;
+      }
 
       /* Narrow screens: scores + actions collapse into one inline row above the grid */
       @media (max-width: 640px) {
@@ -400,6 +408,14 @@
         <div class="seg" id="mode">
           <button data-mode="cpu" class="active">vs Computer</button>
           <button data-mode="two">2 Players</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <span class="label">Board</span>
+        <div class="seg" id="size">
+          <button data-size="3" class="active">3×3</button>
+          <button data-size="4">4×4</button>
         </div>
       </div>
 

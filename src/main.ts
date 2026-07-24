@@ -1,4 +1,4 @@
-import { TicTacToe, type Difficulty, type Mode, type Player, type Starter } from "./game.ts";
+import { TicTacToe, type Difficulty, type Mode, type Player, type Size, type Starter } from "./game.ts";
 
 const game = new TicTacToe();
 // Expose a handle for debugging in the console (harmless in production).
@@ -24,16 +24,25 @@ function pname(p: Player): string {
   return raw.trim() || (p === "X" ? "Player X" : "Player O");
 }
 
-// Build the 3x3 grid of cell buttons.
-const cells: HTMLButtonElement[] = [];
-for (let i = 0; i < 9; i++) {
-  const btn = document.createElement("button");
-  btn.className = "cell";
-  btn.type = "button";
-  btn.setAttribute("aria-label", `Square ${i + 1}`);
-  btn.addEventListener("click", () => onCell(i));
-  boardEl.appendChild(btn);
-  cells.push(btn);
+// Build the n×n grid of cell buttons (rebuilt when the board size changes).
+let cells: HTMLButtonElement[] = [];
+
+function buildBoard(): void {
+  boardEl.innerHTML = "";
+  cells = [];
+  const n = game.size;
+  boardEl.style.gridTemplateColumns = `repeat(${n}, 1fr)`;
+  boardEl.style.gridTemplateRows = `repeat(${n}, 1fr)`;
+  boardEl.classList.toggle("size-4", n === 4);
+  for (let i = 0; i < n * n; i++) {
+    const btn = document.createElement("button");
+    btn.className = "cell";
+    btn.type = "button";
+    btn.setAttribute("aria-label", `Square ${i + 1}`);
+    btn.addEventListener("click", () => onCell(i));
+    boardEl.appendChild(btn);
+    cells.push(btn);
+  }
 }
 
 let aiTimer: number | undefined;
@@ -101,11 +110,11 @@ function scheduleAi(): void {
   aiTimer = window.setTimeout(() => {
     game.playAI();
     render();
-  }, 1350); // pause so the move feels deliberate, not instant
+  }, 2000); // pause so the move feels deliberate, not instant
 }
 
 function render(): void {
-  for (let i = 0; i < 9; i++) {
+  for (let i = 0; i < cells.length; i++) {
     const v = game.board[i];
     const cell = cells[i];
     cell.textContent = v ?? "";
@@ -196,6 +205,13 @@ wireSeg("mode", (btn) => {
   afterRoundReset();
 });
 
+wireSeg("size", (btn) => {
+  window.clearTimeout(aiTimer);
+  game.setSize(Number(btn.dataset.size) as Size);
+  buildBoard();
+  afterRoundReset();
+});
+
 wireSeg("difficulty", (btn) => {
   game.setDifficulty(btn.dataset.diff as Difficulty);
 });
@@ -235,6 +251,7 @@ for (const input of [nameXInput, nameOInput]) {
   });
 }
 
+buildBoard();
 game.reset(); // roll the opening coin flip (default starter)
 syncLabels();
 afterRoundReset();
