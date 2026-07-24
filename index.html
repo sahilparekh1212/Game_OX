@@ -238,11 +238,15 @@
           <button data-diff="hard">Hard</button>
         </div>
       </div>
+
+      <div class="group" id="group-mark">
+        <span class="label">Play as</span>
+        <div class="seg" id="mark">
+          <button data-mark="X" class="active">X</button>
+          <button data-mark="O">O</button>
+        </div>
+      </div>
     </div>
-
-    <div class="status" id="status">Your turn</div>
-
-    <div class="board" id="board"></div>
 
     <div class="scoreboard">
       <div class="score x">
@@ -263,6 +267,10 @@
       <button id="btn-new" class="ctrl-btn">New Game</button>
       <button id="btn-reset" class="ctrl-btn ghost">Reset Score</button>
     </div>
+
+    <div class="status" id="status">Your turn</div>
+
+    <div class="board" id="board"></div>
 
     <script type="module" src="/src/main.ts"></script>
   </body>

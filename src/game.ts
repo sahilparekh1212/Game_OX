@@ -35,8 +35,8 @@ export class TicTacToe {
   current: Player = "X";
   mode: Mode = "cpu";
   difficulty: Difficulty = "medium";
-  readonly human: Player = "X"; // in cpu mode
-  readonly ai: Player = "O"; // in cpu mode
+  human: Player = "X"; // in cpu mode
+  ai: Player = "O"; // in cpu mode
   winner: Player | null = null;
   winningLine: number[] | null = null;
   draw = false;
@@ -65,6 +65,13 @@ export class TicTacToe {
 
   setDifficulty(d: Difficulty): void {
     this.difficulty = d;
+  }
+
+  /** Choose which mark the human plays in cpu mode. X always moves first. */
+  setHumanMark(p: Player): void {
+    this.human = p;
+    this.ai = p === "X" ? "O" : "X";
+    this.reset();
   }
 
   /** True when it's the computer's turn to move. */

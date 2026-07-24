@@ -12,6 +12,7 @@ const scoreDrawEl = document.getElementById("scoreDraw") as HTMLElement;
 const labelXEl = document.getElementById("labelX") as HTMLElement;
 const labelOEl = document.getElementById("labelO") as HTMLElement;
 const groupDiff = document.getElementById("group-diff") as HTMLElement;
+const groupMark = document.getElementById("group-mark") as HTMLElement;
 
 // Build the 3x3 grid of cell buttons.
 const cells: HTMLButtonElement[] = [];
@@ -73,9 +74,15 @@ function statusText(): string {
 
 function syncLabels(): void {
   const cpu = game.mode === "cpu";
-  labelXEl.textContent = cpu ? "You (X)" : "Player X";
-  labelOEl.textContent = cpu ? "CPU (O)" : "Player O";
+  if (cpu) {
+    labelXEl.textContent = game.human === "X" ? "You (X)" : "CPU (X)";
+    labelOEl.textContent = game.human === "O" ? "You (O)" : "CPU (O)";
+  } else {
+    labelXEl.textContent = "Player X";
+    labelOEl.textContent = "Player O";
+  }
   groupDiff.style.display = cpu ? "" : "none";
+  groupMark.style.display = cpu ? "" : "none";
 }
 
 // ---- Menu wiring -----------------------------------------------------------
@@ -96,16 +103,26 @@ wireSeg("mode", (btn) => {
   game.setMode(btn.dataset.mode as Mode);
   syncLabels();
   render();
+  scheduleAi(); // computer opens when the human plays O
 });
 
 wireSeg("difficulty", (btn) => {
   game.setDifficulty(btn.dataset.diff as Difficulty);
 });
 
+wireSeg("mark", (btn) => {
+  window.clearTimeout(aiTimer);
+  game.setHumanMark(btn.dataset.mark as "X" | "O");
+  syncLabels();
+  render();
+  scheduleAi(); // X moves first, so the computer opens when you chose O
+});
+
 document.getElementById("btn-new")?.addEventListener("click", () => {
   window.clearTimeout(aiTimer);
   game.reset();
   render();
+  scheduleAi();
 });
 
 document.getElementById("btn-reset")?.addEventListener("click", () => {

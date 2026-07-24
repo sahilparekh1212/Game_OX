@@ -16,13 +16,14 @@ Then open the URL it prints (usually **http://localhost:5173**).
 
 ## How to play
 
-- **Mode** — **vs Computer** (you're `X`, the computer is `O`) or **2 Players** on the same device.
+- **Mode** — **vs Computer** or **2 Players** on the same device.
+- **Play as** (vs Computer) — choose **X** or **O**. `X` always moves first, so picking `O` lets the computer open.
 - **Difficulty** (vs Computer):
   - **Easy** — plays random moves.
   - **Medium** — takes a winning move, blocks yours, otherwise random.
   - **Hard** — perfect **minimax** play (unbeatable — the best you can do is draw).
 - Tap / click a square to place your mark. First to line up three wins; fill the board with no line for a draw.
-- The scoreboard tracks wins and draws across rounds. **New Game** clears the board; **Reset Score** zeroes the tallies.
+- The scoreboard and actions sit **above the grid**: it tracks wins and draws across rounds, **New Game** clears the board, **Reset Score** zeroes the tallies.
 
 Works on phones and laptops — the board scales to the screen and squares are tap‑friendly.
 
