@@ -12,6 +12,7 @@ export type Player = "X" | "O";
 export type Cell = Player | null;
 export type Difficulty = "easy" | "medium" | "hard";
 export type Mode = "two" | "cpu";
+export type Starter = "human" | "ai" | "flip";
 
 const LINES: number[][] = [
   [0, 1, 2],
@@ -37,6 +38,8 @@ export class TicTacToe {
   difficulty: Difficulty = "medium";
   human: Player = "X"; // in cpu mode
   ai: Player = "O"; // in cpu mode
+  starter: Starter = "human"; // who opens each game in cpu mode
+  flipWinner: "human" | "ai" | null = null; // outcome of the last coin flip
   winner: Player | null = null;
   winningLine: number[] | null = null;
   draw = false;
@@ -48,10 +51,19 @@ export class TicTacToe {
 
   reset(): void {
     this.board = Array(9).fill(null);
-    this.current = "X";
     this.winner = null;
     this.winningLine = null;
     this.draw = false;
+    this.flipWinner = null;
+    if (this.mode === "cpu") {
+      // Who opens: the chosen side, or a coin flip decided fresh each game.
+      const opener =
+        this.starter === "flip" ? (Math.random() < 0.5 ? "human" : "ai") : this.starter;
+      if (this.starter === "flip") this.flipWinner = opener;
+      this.current = opener === "human" ? this.human : this.ai;
+    } else {
+      this.current = "X";
+    }
   }
 
   resetScores(): void {
@@ -67,10 +79,16 @@ export class TicTacToe {
     this.difficulty = d;
   }
 
-  /** Choose which mark the human plays in cpu mode. X always moves first. */
+  /** Choose which mark the human plays in cpu mode. */
   setHumanMark(p: Player): void {
     this.human = p;
     this.ai = p === "X" ? "O" : "X";
+    this.reset();
+  }
+
+  /** Choose who opens each game in cpu mode: you, the computer, or a coin flip. */
+  setStarter(s: Starter): void {
+    this.starter = s;
     this.reset();
   }
 

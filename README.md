@@ -17,7 +17,8 @@ Then open the URL it prints (usually **http://localhost:5173**).
 ## How to play
 
 - **Mode** — **vs Computer** or **2 Players** on the same device.
-- **Play as** (vs Computer) — choose **X** or **O**. `X` always moves first, so picking `O` lets the computer open.
+- **Play as** (vs Computer) — choose **X** or **O**.
+- **First move** (vs Computer) — choose who opens: **You**, **CPU**, or **🪙 Flip** for a coin toss decided fresh each game (the status line announces who won the flip).
 - **Difficulty** (vs Computer):
   - **Easy** — plays random moves.
   - **Medium** — takes a winning move, blocks yours, otherwise random.

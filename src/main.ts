@@ -1,4 +1,4 @@
-import { TicTacToe, type Difficulty, type Mode } from "./game.ts";
+import { TicTacToe, type Difficulty, type Mode, type Starter } from "./game.ts";
 
 const game = new TicTacToe();
 // Expose a handle for debugging in the console (harmless in production).
@@ -13,6 +13,7 @@ const labelXEl = document.getElementById("labelX") as HTMLElement;
 const labelOEl = document.getElementById("labelO") as HTMLElement;
 const groupDiff = document.getElementById("group-diff") as HTMLElement;
 const groupMark = document.getElementById("group-mark") as HTMLElement;
+const groupStarter = document.getElementById("group-starter") as HTMLElement;
 
 // Build the 3x3 grid of cell buttons.
 const cells: HTMLButtonElement[] = [];
@@ -68,7 +69,13 @@ function statusText(): string {
     return `${game.winner} wins! 🎉`;
   }
   if (game.draw) return "It's a draw!";
-  if (game.mode === "cpu") return game.current === game.human ? "Your turn" : "Computer thinking…";
+  if (game.mode === "cpu") {
+    // Announce the coin-flip result until the first mark lands.
+    if (game.flipWinner && game.board.every((c) => c === null)) {
+      return game.flipWinner === "human" ? "🪙 You won the flip — your move!" : "🪙 CPU won the flip…";
+    }
+    return game.current === game.human ? "Your turn" : "Computer thinking…";
+  }
   return `${game.current}'s turn`;
 }
 
@@ -83,6 +90,7 @@ function syncLabels(): void {
   }
   groupDiff.style.display = cpu ? "" : "none";
   groupMark.style.display = cpu ? "" : "none";
+  groupStarter.style.display = cpu ? "" : "none";
 }
 
 // ---- Menu wiring -----------------------------------------------------------
@@ -115,7 +123,14 @@ wireSeg("mark", (btn) => {
   game.setHumanMark(btn.dataset.mark as "X" | "O");
   syncLabels();
   render();
-  scheduleAi(); // X moves first, so the computer opens when you chose O
+  scheduleAi();
+});
+
+wireSeg("starter", (btn) => {
+  window.clearTimeout(aiTimer);
+  game.setStarter(btn.dataset.starter as Starter);
+  render();
+  scheduleAi(); // if the CPU won the opening, let it move
 });
 
 document.getElementById("btn-new")?.addEventListener("click", () => {
