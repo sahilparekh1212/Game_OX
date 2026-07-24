@@ -101,7 +101,7 @@ function scheduleAi(): void {
   aiTimer = window.setTimeout(() => {
     game.playAI();
     render();
-  }, 350); // brief pause so the move feels deliberate
+  }, 1350); // pause so the move feels deliberate, not instant
 }
 
 function render(): void {
