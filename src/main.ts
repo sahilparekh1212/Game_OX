@@ -1,4 +1,4 @@
-import { TicTacToe, type Difficulty, type Mode, type Player, type Size, type Starter } from "./game.ts";
+import { TicTacToe, type Difficulty, type Mode, type Player, type Starter } from "./game.ts";
 
 const game = new TicTacToe();
 // Expose a handle for debugging in the console (harmless in production).
@@ -24,25 +24,16 @@ function pname(p: Player): string {
   return raw.trim() || (p === "X" ? "Player X" : "Player O");
 }
 
-// Build the n×n grid of cell buttons (rebuilt when the board size changes).
-let cells: HTMLButtonElement[] = [];
-
-function buildBoard(): void {
-  boardEl.innerHTML = "";
-  cells = [];
-  const n = game.size;
-  boardEl.style.gridTemplateColumns = `repeat(${n}, 1fr)`;
-  boardEl.style.gridTemplateRows = `repeat(${n}, 1fr)`;
-  boardEl.classList.toggle("size-4", n === 4);
-  for (let i = 0; i < n * n; i++) {
-    const btn = document.createElement("button");
-    btn.className = "cell";
-    btn.type = "button";
-    btn.setAttribute("aria-label", `Square ${i + 1}`);
-    btn.addEventListener("click", () => onCell(i));
-    boardEl.appendChild(btn);
-    cells.push(btn);
-  }
+// Build the 3×3 grid of cell buttons.
+const cells: HTMLButtonElement[] = [];
+for (let i = 0; i < 9; i++) {
+  const btn = document.createElement("button");
+  btn.className = "cell";
+  btn.type = "button";
+  btn.setAttribute("aria-label", `Square ${i + 1}`);
+  btn.addEventListener("click", () => onCell(i));
+  boardEl.appendChild(btn);
+  cells.push(btn);
 }
 
 let aiTimer: number | undefined;
@@ -123,7 +114,7 @@ function render(): void {
     cell.classList.toggle("win", game.winningLine?.includes(i) ?? false);
     cell.disabled = v !== null || game.over || (game.mode === "cpu" && game.current === game.ai);
   }
-  statusEl.textContent = statusText();
+  renderStatus();
   statusEl.classList.toggle("over", game.over);
   scoreXEl.textContent = String(game.scores.X);
   scoreOEl.textContent = String(game.scores.O);
@@ -135,7 +126,7 @@ function render(): void {
     if (endOverlay.hidden && endTimer === undefined) {
       endTimer = window.setTimeout(() => {
         endTimer = undefined;
-        endTitle.textContent = statusText();
+        endTitle.textContent = statusInfo().text;
         endOverlay.hidden = false;
       }, 900);
     }
@@ -154,20 +145,40 @@ function hideEndOverlay(): void {
   endOverlay.hidden = true;
 }
 
-function statusText(): string {
+/** Status line content: text plus (for turn messages) the mover's mark. */
+function statusInfo(): { text: string; mark: Player | null } {
   if (game.winner) {
-    if (game.mode === "cpu") return game.winner === game.human ? "You win! 🎉" : "Computer wins!";
-    return `${pname(game.winner)} wins! 🎉`;
+    if (game.mode === "cpu") {
+      return { text: game.winner === game.human ? "You win! 🎉" : "CPU wins!", mark: null };
+    }
+    return { text: `${pname(game.winner)} wins! 🎉`, mark: null };
   }
-  if (game.draw) return "It's a draw!";
+  if (game.draw) return { text: "It's a draw!", mark: null };
   if (game.mode === "cpu") {
     // Announce the coin-flip result until the first mark lands.
     if (game.flipWinner && game.board.every((c) => c === null)) {
-      return game.flipWinner === "human" ? "🪙 You won the flip — your move!" : "🪙 CPU won the flip…";
+      return game.flipWinner === "human"
+        ? { text: "🪙 You won the flip — your move!", mark: game.human }
+        : { text: "🪙 CPU won the flip…", mark: game.ai };
     }
-    return game.current === game.human ? "Your turn" : "Computer thinking…";
+    return game.current === game.human
+      ? { text: "Your turn", mark: game.human }
+      : { text: "CPU's turn", mark: game.ai };
   }
-  return `${pname(game.current)}'s turn`;
+  return { text: `${pname(game.current)}'s turn`, mark: game.current };
+}
+
+/** Write the status line, appending a coloured mark icon for turn messages. */
+function renderStatus(): void {
+  const s = statusInfo();
+  statusEl.textContent = s.text;
+  if (s.mark) {
+    statusEl.appendChild(document.createTextNode(" — "));
+    const m = document.createElement("span");
+    m.className = `status-mark ${s.mark === "X" ? "mark-x" : "mark-o"}`;
+    m.textContent = s.mark;
+    statusEl.appendChild(m);
+  }
 }
 
 function syncLabels(): void {
@@ -202,13 +213,6 @@ wireSeg("mode", (btn) => {
   window.clearTimeout(aiTimer);
   game.setMode(btn.dataset.mode as Mode);
   syncLabels();
-  afterRoundReset();
-});
-
-wireSeg("size", (btn) => {
-  window.clearTimeout(aiTimer);
-  game.setSize(Number(btn.dataset.size) as Size);
-  buildBoard();
   afterRoundReset();
 });
 
@@ -251,7 +255,6 @@ for (const input of [nameXInput, nameOInput]) {
   });
 }
 
-buildBoard();
 game.reset(); // roll the opening coin flip (default starter)
 syncLabels();
 afterRoundReset();
