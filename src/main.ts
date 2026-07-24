@@ -29,8 +29,57 @@ for (let i = 0; i < 9; i++) {
 
 let aiTimer: number | undefined;
 
+// ---- Coin flip animation ----------------------------------------------------
+
+const coinOverlay = document.getElementById("coin-overlay") as HTMLElement;
+const coinEl = document.getElementById("coin") as HTMLElement;
+let flipping = false;
+let flipToken = 0; // invalidates an in-flight flip when settings change mid-spin
+
+/** Spin the coin to the winning face; resolves true unless superseded. */
+function coinFlip(winner: "human" | "ai"): Promise<boolean> {
+  const token = ++flipToken;
+  flipping = true;
+  coinOverlay.hidden = false;
+  coinEl.style.transition = "none";
+  coinEl.style.transform = "rotateY(0deg)";
+  void coinEl.offsetWidth; // flush styles so the spin animates from 0
+  coinEl.style.transition = "";
+  const angle = 5 * 360 + (winner === "ai" ? 180 : 0); // land on YOU or CPU
+  coinEl.style.transform = `rotateY(${angle}deg)`;
+  statusEl.textContent = "🪙 Flipping…";
+  return new Promise((resolve) => {
+    window.setTimeout(() => {
+      const valid = token === flipToken;
+      if (valid) {
+        flipping = false;
+        coinOverlay.hidden = true;
+      }
+      resolve(valid);
+    }, 1750); // 1.15s spin + a short hold on the result
+  });
+}
+
+/** Reset follow-up shared by New Game / mode / mark / starter changes. */
+function afterRoundReset(): void {
+  flipToken++; // cancel any in-flight flip
+  flipping = false;
+  coinOverlay.hidden = true;
+  render();
+  if (game.mode === "cpu" && game.flipWinner && !game.over) {
+    void coinFlip(game.flipWinner).then((ok) => {
+      if (ok) {
+        render();
+        scheduleAi();
+      }
+    });
+  } else {
+    scheduleAi();
+  }
+}
+
 function onCell(i: number): void {
-  if (game.over) return;
+  if (flipping || game.over) return;
   if (game.mode === "cpu" && game.current === game.ai) return; // wait for the computer
   if (!game.play(i)) return;
   render();
@@ -110,8 +159,7 @@ wireSeg("mode", (btn) => {
   window.clearTimeout(aiTimer);
   game.setMode(btn.dataset.mode as Mode);
   syncLabels();
-  render();
-  scheduleAi(); // computer opens when the human plays O
+  afterRoundReset();
 });
 
 wireSeg("difficulty", (btn) => {
@@ -122,22 +170,19 @@ wireSeg("mark", (btn) => {
   window.clearTimeout(aiTimer);
   game.setHumanMark(btn.dataset.mark as "X" | "O");
   syncLabels();
-  render();
-  scheduleAi();
+  afterRoundReset();
 });
 
 wireSeg("starter", (btn) => {
   window.clearTimeout(aiTimer);
   game.setStarter(btn.dataset.starter as Starter);
-  render();
-  scheduleAi(); // if the CPU won the opening, let it move
+  afterRoundReset();
 });
 
 document.getElementById("btn-new")?.addEventListener("click", () => {
   window.clearTimeout(aiTimer);
   game.reset();
-  render();
-  scheduleAi();
+  afterRoundReset();
 });
 
 document.getElementById("btn-reset")?.addEventListener("click", () => {

@@ -176,6 +176,55 @@
         color: #8effc4;
       }
 
+      /* Coin flip animation */
+      .board-wrap {
+        position: relative;
+      }
+      .coin-overlay {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(6, 10, 22, 0.62);
+        border-radius: 14px;
+        z-index: 5;
+        perspective: 600px;
+      }
+      .coin-overlay[hidden] {
+        display: none;
+      }
+      .coin {
+        width: 96px;
+        height: 96px;
+        position: relative;
+        transform-style: preserve-3d;
+        transition: transform 1.15s cubic-bezier(0.25, 0.65, 0.3, 1);
+      }
+      .coin-face {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        font-size: 19px;
+        letter-spacing: 1px;
+        backface-visibility: hidden;
+      }
+      .coin-front {
+        background: radial-gradient(circle at 35% 30%, #ffe9a8, #f5c542 55%, #c99a1f);
+        color: #5c4404;
+        box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.25), 0 6px 18px rgba(0, 0, 0, 0.5);
+      }
+      .coin-back {
+        transform: rotateY(180deg);
+        background: radial-gradient(circle at 35% 30%, #dfe9ff, #9db4e8 55%, #5c78b8);
+        color: #1c2c55;
+        box-shadow: inset 0 0 0 4px rgba(255, 255, 255, 0.25), 0 6px 18px rgba(0, 0, 0, 0.5);
+      }
+
       /* Board — sized against the viewport so the page never scrolls */
       .board {
         display: grid;
@@ -327,7 +376,15 @@
 
       <div class="main">
         <div class="status" id="status">Your turn</div>
-        <div class="board" id="board"></div>
+        <div class="board-wrap">
+          <div class="board" id="board"></div>
+          <div class="coin-overlay" id="coin-overlay" hidden>
+            <div class="coin" id="coin">
+              <div class="coin-face coin-front">YOU</div>
+              <div class="coin-face coin-back">CPU</div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
