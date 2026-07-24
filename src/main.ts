@@ -235,5 +235,6 @@ for (const input of [nameXInput, nameOInput]) {
   });
 }
 
+game.reset(); // roll the opening coin flip (default starter)
 syncLabels();
-render();
+afterRoundReset();

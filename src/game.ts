@@ -38,7 +38,7 @@ export class TicTacToe {
   difficulty: Difficulty = "medium";
   human: Player = "X"; // in cpu mode
   ai: Player = "O"; // in cpu mode
-  starter: Starter = "human"; // who opens each game in cpu mode
+  starter: Starter = "flip"; // who opens each game in cpu mode
   flipWinner: "human" | "ai" | null = null; // outcome of the last coin flip
   winner: Player | null = null;
   winningLine: number[] | null = null;
