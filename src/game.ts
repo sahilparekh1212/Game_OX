@@ -15,6 +15,13 @@ export type Difficulty = "easy" | "medium" | "hard";
 export type Mode = "two" | "cpu";
 export type Starter = "human" | "ai" | "flip";
 
+/** Why a hinted move is recommended (drives the coach's explanation). */
+export type HintReason = "win" | "block" | "center" | "opening" | "best";
+export interface Hint {
+  index: number;
+  reason: HintReason;
+}
+
 /** Chance that hard mode plays a random move instead of the optimal one. */
 const HARD_SLIP_CHANCE = 0.2;
 
@@ -230,5 +237,72 @@ export class TicTacToe {
       }
     }
     return null;
+  }
+
+  // ---- Hints ---------------------------------------------------------------
+
+  /**
+   * Recommend the best move for the player whose turn it is (the human in cpu
+   * mode). Returns null when it isn't a hintable moment — game over, or the
+   * CPU is to move. The move itself is optimal; `reason` labels *why* so the
+   * coach can explain it.
+   */
+  bestHint(): Hint | null {
+    if (this.over) return null;
+    const me = this.mode === "cpu" ? this.human : this.current;
+    if (this.current !== me) return null; // not this player's turn
+    const empties = this.emptyIndices();
+    if (empties.length === 0) return null;
+    const opp: Player = me === "X" ? "O" : "X";
+
+    const win = this.findWinning(me);
+    if (win !== -1) return { index: win, reason: "win" };
+    const block = this.findWinning(opp);
+    if (block !== -1) return { index: block, reason: "block" };
+
+    const best = this.optimalMove(me, opp, empties);
+    if (empties.length === 9) return { index: best, reason: "opening" };
+    if (best === 4) return { index: best, reason: "center" };
+    return { index: best, reason: "best" };
+  }
+
+  /** Full-depth minimax move maximising for `me` (used only by bestHint). */
+  private optimalMove(me: Player, opp: Player, empties: number[]): number {
+    let bestScore = -Infinity;
+    let bestIdx = empties[0];
+    for (const i of empties) {
+      this.board[i] = me;
+      const score = this.hintMinimax(me, opp, false, 1);
+      this.board[i] = null;
+      if (score > bestScore) {
+        bestScore = score;
+        bestIdx = i;
+      }
+    }
+    return bestIdx;
+  }
+
+  private hintMinimax(me: Player, opp: Player, isMax: boolean, depth: number): number {
+    const w = this.winnerOf();
+    if (w === me) return 10 - depth;
+    if (w === opp) return depth - 10;
+    const empties = this.emptyIndices();
+    if (empties.length === 0) return 0;
+    if (isMax) {
+      let best = -Infinity;
+      for (const i of empties) {
+        this.board[i] = me;
+        best = Math.max(best, this.hintMinimax(me, opp, false, depth + 1));
+        this.board[i] = null;
+      }
+      return best;
+    }
+    let best = Infinity;
+    for (const i of empties) {
+      this.board[i] = opp;
+      best = Math.min(best, this.hintMinimax(me, opp, true, depth + 1));
+      this.board[i] = null;
+    }
+    return best;
   }
 }

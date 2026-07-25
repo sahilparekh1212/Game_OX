@@ -1,4 +1,5 @@
 import { TicTacToe, type Difficulty, type Mode, type Player, type Starter } from "./game.ts";
+import { fetchOxHint } from "./hints.ts";
 
 const game = new TicTacToe();
 // Expose a handle for debugging in the console (harmless in production).
@@ -17,6 +18,13 @@ const groupStarter = document.getElementById("group-starter") as HTMLElement;
 const groupNames = document.getElementById("group-names") as HTMLElement;
 const nameXInput = document.getElementById("nameX") as HTMLInputElement;
 const nameOInput = document.getElementById("nameO") as HTMLInputElement;
+
+// Hint feature: a toggle in the panel shows/hides the button; the button asks
+// the hints-api Worker to explain the engine's recommended move.
+const hintBtn = document.getElementById("btn-hint") as HTMLButtonElement;
+const hintOverlay = document.getElementById("hint-overlay") as HTMLElement;
+const hintBody = document.getElementById("hint-body") as HTMLElement;
+let hintsEnabled = localStorage.getItem("ox:hints") === "on";
 
 /** Display name for a mark in 2-player mode (falls back to Player X / Player O). */
 function pname(p: Player): string {
@@ -115,6 +123,7 @@ function render(): void {
     cell.disabled = v !== null || game.over || (game.mode === "cpu" && game.current === game.ai);
   }
   renderStatus();
+  updateHintButton();
   statusEl.classList.toggle("over", game.over);
   scoreXEl.textContent = String(game.scores.X);
   scoreOEl.textContent = String(game.scores.O);
@@ -144,6 +153,55 @@ function hideEndOverlay(): void {
   endTimer = undefined;
   endOverlay.hidden = true;
 }
+
+// ---- Hints -----------------------------------------------------------------
+
+/** Show/enable the hint button per the toggle and whether a hint is available. */
+function updateHintButton(): void {
+  hintBtn.hidden = !hintsEnabled;
+  if (!hintsEnabled) return;
+  hintBtn.disabled = flipping || game.bestHint() === null;
+}
+
+function openHint(text: string, loading = false): void {
+  hintBody.textContent = text;
+  hintBody.classList.toggle("loading", loading);
+  hintOverlay.hidden = false;
+}
+
+function closeHint(): void {
+  hintOverlay.hidden = true;
+}
+
+let hintPending = false;
+async function requestHint(): Promise<void> {
+  if (hintPending) return;
+  const h = game.bestHint();
+  if (!h) return;
+  hintPending = true;
+  hintBtn.disabled = true;
+  openHint("Thinking…", true);
+  try {
+    const text = await fetchOxHint({
+      board: game.board,
+      toMove: game.current,
+      recommended: h.index,
+      reason: h.reason,
+    });
+    openHint(text);
+  } catch {
+    openHint("Sorry — couldn't fetch a hint. Check the connection and try again.");
+  } finally {
+    hintPending = false;
+    updateHintButton();
+  }
+}
+
+hintBtn.addEventListener("click", () => void requestHint());
+document.getElementById("hint-close")?.addEventListener("click", closeHint);
+hintOverlay.addEventListener("click", (e) => {
+  if (e.target === hintOverlay) closeHint(); // click the backdrop to dismiss
+});
 
 /** Status line content: text plus (for turn messages) the mover's mark. */
 function statusInfo(): { text: string; mark: Player | null } {
@@ -232,6 +290,19 @@ wireSeg("starter", (btn) => {
   game.setStarter(btn.dataset.starter as Starter);
   afterRoundReset();
 });
+
+wireSeg("hints", (btn) => {
+  hintsEnabled = btn.dataset.hints === "on";
+  localStorage.setItem("ox:hints", hintsEnabled ? "on" : "off");
+  if (!hintsEnabled) closeHint();
+  updateHintButton();
+});
+
+// Reflect the persisted hints toggle in its segmented control on load.
+for (const child of Array.from(document.getElementById("hints")!.children)) {
+  const el = child as HTMLElement;
+  el.classList.toggle("active", el.dataset.hints === (hintsEnabled ? "on" : "off"));
+}
 
 // End-popup actions: both start a fresh round; Reset Score also zeroes the tallies.
 document.getElementById("po-new")?.addEventListener("click", () => {
