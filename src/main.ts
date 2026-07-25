@@ -225,7 +225,6 @@ function setHint(text: string, loading = false, muted = false): void {
  * cached per position and stale async replies are ignored.
  */
 function updateHintBar(): void {
-  document.body.classList.toggle("hints-on", hintsEnabled);
   hintBar.hidden = !hintsEnabled;
   if (!hintsEnabled) {
     hintKey = "";
@@ -324,52 +323,46 @@ function syncLabels(): void {
 
 // ---- Menu wiring -----------------------------------------------------------
 
-function wireSeg(id: string, onPick: (btn: HTMLElement) => void): void {
-  const seg = document.getElementById(id);
-  seg?.addEventListener("click", (e) => {
-    const btn = (e.target as HTMLElement).closest("button");
-    if (!btn || !seg.contains(btn)) return;
-    for (const child of Array.from(seg.children)) child.classList.toggle("active", child === btn);
-    onPick(btn);
-    (document.activeElement as HTMLElement | null)?.blur();
+function wireSelect(id: string, onPick: (value: string) => void): void {
+  const sel = document.getElementById(id) as HTMLSelectElement | null;
+  sel?.addEventListener("change", () => {
+    onPick(sel.value);
+    sel.blur(); // hand focus back so keyboard play keeps working
   });
 }
 
-wireSeg("mode", (btn) => {
+wireSelect("mode", (v) => {
   window.clearTimeout(aiTimer);
-  game.setMode(btn.dataset.mode as Mode);
+  game.setMode(v as Mode);
   syncLabels();
   afterRoundReset();
 });
 
-wireSeg("difficulty", (btn) => {
-  game.setDifficulty(btn.dataset.diff as Difficulty);
+wireSelect("difficulty", (v) => {
+  game.setDifficulty(v as Difficulty);
 });
 
-wireSeg("mark", (btn) => {
+wireSelect("mark", (v) => {
   window.clearTimeout(aiTimer);
-  game.setHumanMark(btn.dataset.mark as "X" | "O");
+  game.setHumanMark(v as "X" | "O");
   syncLabels();
   afterRoundReset();
 });
 
-wireSeg("starter", (btn) => {
+wireSelect("starter", (v) => {
   window.clearTimeout(aiTimer);
-  game.setStarter(btn.dataset.starter as Starter);
+  game.setStarter(v as Starter);
   afterRoundReset();
 });
 
-wireSeg("hints", (btn) => {
-  hintsEnabled = btn.dataset.hints === "on";
+wireSelect("hints", (v) => {
+  hintsEnabled = v === "on";
   localStorage.setItem("ox:hints", hintsEnabled ? "on" : "off");
   updateHintBar();
 });
 
-// Reflect the persisted hints toggle in its segmented control on load.
-for (const child of Array.from(document.getElementById("hints")!.children)) {
-  const el = child as HTMLElement;
-  el.classList.toggle("active", el.dataset.hints === (hintsEnabled ? "on" : "off"));
-}
+// Reflect the persisted hints toggle in its dropdown on load.
+(document.getElementById("hints") as HTMLSelectElement).value = hintsEnabled ? "on" : "off";
 
 // End-popup actions: both start a fresh round; Reset Score also zeroes the tallies.
 document.getElementById("po-new")?.addEventListener("click", () => {

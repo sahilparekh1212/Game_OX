@@ -77,31 +77,32 @@
         letter-spacing: 1.4px;
         color: #7d8bab;
       }
-      .seg {
-        display: inline-flex;
-        background: #101a30;
-        border-radius: 8px;
-        padding: 3px;
-        gap: 3px;
-      }
-      .seg button {
+      .dd {
         appearance: none;
-        border: none;
-        background: transparent;
-        color: #aebbd6;
+        -webkit-appearance: none;
+        background-color: #101a30;
+        color: #e8eefc;
+        border: 1px solid rgba(159, 208, 255, 0.2);
+        border-radius: 8px;
+        padding: 6px 30px 6px 12px;
         font: inherit;
         font-size: 13px;
-        padding: 5px 12px;
-        border-radius: 6px;
         cursor: pointer;
-        transition: background 0.12s, color 0.12s;
+        min-width: 72px;
+        background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'><path d='M2.5 4.5l3.5 3.5 3.5-3.5' fill='none' stroke='%23aebbd6' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/></svg>");
+        background-repeat: no-repeat;
+        background-position: right 10px center;
       }
-      .seg button:hover {
+      .dd:hover {
+        border-color: rgba(159, 208, 255, 0.4);
+      }
+      .dd:focus {
+        outline: none;
+        border-color: #3a6df0;
+      }
+      .dd option {
+        background: #101a30;
         color: #e8eefc;
-      }
-      .seg button.active {
-        background: #3a6df0;
-        color: #ffffff;
       }
 
       /* Game area: score sidebar beside the board on wide screens */
@@ -361,10 +362,6 @@
         width: clamp(220px, min(46vw, 100dvh - 250px), 400px);
         aspect-ratio: 1 / 1;
       }
-      /* Reserve height for the hint bar so the board never gets clipped */
-      body.hints-on .board {
-        width: clamp(200px, min(46vw, 100dvh - 335px), 400px);
-      }
       .cell {
         appearance: none;
         border: none;
@@ -440,9 +437,6 @@
         .board {
           width: clamp(200px, min(88vw, 100dvh - 330px), 400px);
         }
-        body.hints-on .board {
-          width: clamp(180px, min(88vw, 100dvh - 410px), 400px);
-        }
         .cell {
           font-size: clamp(26px, 12vw, 64px);
         }
@@ -455,44 +449,44 @@
     <div class="panel">
       <div class="group">
         <span class="label">Mode</span>
-        <div class="seg" id="mode">
-          <button data-mode="cpu" class="active">vs CPU</button>
-          <button data-mode="two">2 Players</button>
-        </div>
+        <select class="dd" id="mode">
+          <option value="cpu" selected>vs CPU</option>
+          <option value="two">2 Players</option>
+        </select>
       </div>
 
       <div class="group" id="group-diff">
         <span class="label">Difficulty</span>
-        <div class="seg" id="difficulty">
-          <button data-diff="easy">Easy</button>
-          <button data-diff="medium" class="active">Medium</button>
-          <button data-diff="hard">Hard</button>
-        </div>
+        <select class="dd" id="difficulty">
+          <option value="easy">Easy</option>
+          <option value="medium" selected>Medium</option>
+          <option value="hard">Hard</option>
+        </select>
       </div>
 
       <div class="group" id="group-mark">
         <span class="label">Play as</span>
-        <div class="seg" id="mark">
-          <button data-mark="X" class="active">X</button>
-          <button data-mark="O">O</button>
-        </div>
+        <select class="dd" id="mark">
+          <option value="X" selected>X</option>
+          <option value="O">O</option>
+        </select>
       </div>
 
       <div class="group" id="group-starter">
         <span class="label">First move</span>
-        <div class="seg" id="starter">
-          <button data-starter="flip" class="active">🪙 Flip</button>
-          <button data-starter="human">You</button>
-          <button data-starter="ai">CPU</button>
-        </div>
+        <select class="dd" id="starter">
+          <option value="flip" selected>🪙 Flip</option>
+          <option value="human">You</option>
+          <option value="ai">CPU</option>
+        </select>
       </div>
 
       <div class="group" id="group-hints">
         <span class="label">AI Hint</span>
-        <div class="seg" id="hints">
-          <button data-hints="on">On</button>
-          <button data-hints="off" class="active">Off</button>
-        </div>
+        <select class="dd" id="hints">
+          <option value="on">On</option>
+          <option value="off" selected>Off</option>
+        </select>
       </div>
 
       <div class="group" id="group-names" style="display: none">
@@ -522,11 +516,6 @@
 
       <div class="main">
         <div class="status" id="status">Your turn</div>
-        <div class="hint-bar" id="hint-bar" hidden>
-          <span class="hint-grip" aria-hidden="true">⠿</span>
-          <span class="hint-bar-icon">💡</span>
-          <span class="hint-bar-text" id="hint-text"></span>
-        </div>
         <div class="board-wrap">
           <div class="board" id="board"></div>
           <div class="coin-overlay" id="coin-overlay" hidden>
@@ -542,6 +531,11 @@
               <button id="po-reset" class="ctrl-btn ghost">Reset Score</button>
             </div>
           </div>
+        </div>
+        <div class="hint-bar" id="hint-bar" hidden>
+          <span class="hint-grip" aria-hidden="true">⠿</span>
+          <span class="hint-bar-icon">💡</span>
+          <span class="hint-bar-text" id="hint-text"></span>
         </div>
       </div>
     </div>
