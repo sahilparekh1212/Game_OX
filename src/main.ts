@@ -19,12 +19,14 @@ const groupNames = document.getElementById("group-names") as HTMLElement;
 const nameXInput = document.getElementById("nameX") as HTMLInputElement;
 const nameOInput = document.getElementById("nameO") as HTMLInputElement;
 
-// Hint feature: a toggle in the panel shows/hides the button; the button asks
-// the hints-api Worker to explain the engine's recommended move.
-const hintBtn = document.getElementById("btn-hint") as HTMLButtonElement;
-const hintOverlay = document.getElementById("hint-overlay") as HTMLElement;
-const hintBody = document.getElementById("hint-body") as HTMLElement;
+// AI hint: when on, a persistent bar above the board shows the recommended
+// move for the current position, refreshed each turn (it never covers the board).
+const hintBar = document.getElementById("hint-bar") as HTMLElement;
+const hintText = document.getElementById("hint-text") as HTMLElement;
 let hintsEnabled = localStorage.getItem("ox:hints") === "on";
+const hintCache = new Map<string, string>(); // position key -> hint text
+let hintKey = ""; // position currently shown/fetching (guards stale async results)
+makeDraggable(hintBar, "ox:hintPos"); // let the user drag the hint anywhere
 
 /** Display name for a mark in 2-player mode (falls back to Player X / Player O). */
 function pname(p: Player): string {
@@ -123,7 +125,7 @@ function render(): void {
     cell.disabled = v !== null || game.over || (game.mode === "cpu" && game.current === game.ai);
   }
   renderStatus();
-  updateHintButton();
+  updateHintBar();
   statusEl.classList.toggle("over", game.over);
   scoreXEl.textContent = String(game.scores.X);
   scoreOEl.textContent = String(game.scores.O);
@@ -154,54 +156,120 @@ function hideEndOverlay(): void {
   endOverlay.hidden = true;
 }
 
-// ---- Hints -----------------------------------------------------------------
+// ---- AI hint ---------------------------------------------------------------
 
-/** Show/enable the hint button per the toggle and whether a hint is available. */
-function updateHintButton(): void {
-  hintBtn.hidden = !hintsEnabled;
-  if (!hintsEnabled) return;
-  hintBtn.disabled = flipping || game.bestHint() === null;
-}
-
-function openHint(text: string, loading = false): void {
-  hintBody.textContent = text;
-  hintBody.classList.toggle("loading", loading);
-  hintOverlay.hidden = false;
-}
-
-function closeHint(): void {
-  hintOverlay.hidden = true;
-}
-
-let hintPending = false;
-async function requestHint(): Promise<void> {
-  if (hintPending) return;
-  const h = game.bestHint();
-  if (!h) return;
-  hintPending = true;
-  hintBtn.disabled = true;
-  openHint("Thinking…", true);
-  try {
-    const text = await fetchOxHint({
-      board: game.board,
-      toMove: game.current,
-      recommended: h.index,
-      reason: h.reason,
-    });
-    openHint(text);
-  } catch {
-    openHint("Sorry — couldn't fetch a hint. Check the connection and try again.");
-  } finally {
-    hintPending = false;
-    updateHintButton();
+/** Let the user drag an element around; its position persists in localStorage. */
+function makeDraggable(el: HTMLElement, storageKey: string): void {
+  const place = (x: number, y: number): void => {
+    const w = el.offsetWidth || 220;
+    const h = el.offsetHeight || 40;
+    const cx = Math.max(4, Math.min(window.innerWidth - w - 4, x));
+    const cy = Math.max(4, Math.min(window.innerHeight - h - 4, y));
+    el.style.position = "fixed";
+    el.style.left = `${cx}px`;
+    el.style.top = `${cy}px`;
+    el.style.right = "auto";
+    el.style.margin = "0";
+    el.style.zIndex = "30";
+  };
+  const saved = localStorage.getItem(storageKey);
+  if (saved) {
+    try {
+      const p = JSON.parse(saved) as { x: number; y: number };
+      place(p.x, p.y);
+    } catch {
+      /* ignore a malformed saved position */
+    }
   }
+  let dragging = false;
+  let dx = 0;
+  let dy = 0;
+  el.addEventListener("pointerdown", (e) => {
+    if ((e.target as HTMLElement).closest(".hint-bar-text")) return; // keep the text selectable
+    const r = el.getBoundingClientRect();
+    dx = e.clientX - r.left;
+    dy = e.clientY - r.top;
+    dragging = true;
+    el.setPointerCapture(e.pointerId);
+    el.classList.add("dragging");
+    e.preventDefault();
+  });
+  el.addEventListener("pointermove", (e) => {
+    if (dragging) place(e.clientX - dx, e.clientY - dy);
+  });
+  const end = (): void => {
+    if (!dragging) return;
+    dragging = false;
+    el.classList.remove("dragging");
+    const r = el.getBoundingClientRect();
+    localStorage.setItem(storageKey, JSON.stringify({ x: r.left, y: r.top }));
+  };
+  el.addEventListener("pointerup", end);
+  el.addEventListener("pointercancel", end);
+  // Double-click to snap it back to its default spot above the board.
+  el.addEventListener("dblclick", () => {
+    localStorage.removeItem(storageKey);
+    el.style.cssText = "";
+  });
 }
 
-hintBtn.addEventListener("click", () => void requestHint());
-document.getElementById("hint-close")?.addEventListener("click", closeHint);
-hintOverlay.addEventListener("click", (e) => {
-  if (e.target === hintOverlay) closeHint(); // click the backdrop to dismiss
-});
+function setHint(text: string, loading = false, muted = false): void {
+  hintText.textContent = text;
+  hintText.classList.toggle("loading", loading);
+  hintText.classList.toggle("muted", muted);
+}
+
+/**
+ * Keep the above-board hint bar in sync with the position. When on, it shows a
+ * fresh recommendation for whoever is to play, updated each step. Results are
+ * cached per position and stale async replies are ignored.
+ */
+function updateHintBar(): void {
+  document.body.classList.toggle("hints-on", hintsEnabled);
+  hintBar.hidden = !hintsEnabled;
+  if (!hintsEnabled) {
+    hintKey = "";
+    return;
+  }
+  if (game.over) {
+    hintKey = "over";
+    setHint("Round over — start a new game for hints.", false, true);
+    return;
+  }
+  if (flipping) {
+    hintKey = "flip";
+    setHint("Flipping the coin…", false, true);
+    return;
+  }
+  const playersTurn = game.mode !== "cpu" || game.current === game.human;
+  if (!playersTurn) {
+    hintKey = "cpu";
+    setHint("CPU is thinking…", false, true);
+    return;
+  }
+  const key = game.board.map((c) => c ?? "-").join("") + game.current;
+  if (key === hintKey) return; // already showing / fetching this position
+  hintKey = key;
+  const cached = hintCache.get(key);
+  if (cached !== undefined) {
+    setHint(cached);
+    return;
+  }
+  const h = game.bestHint();
+  if (!h) {
+    setHint("—", false, true);
+    return;
+  }
+  setHint("Thinking…", true);
+  fetchOxHint({ board: game.board, toMove: game.current, recommended: h.index, reason: h.reason })
+    .then((text) => {
+      hintCache.set(key, text);
+      if (hintKey === key) setHint(text);
+    })
+    .catch(() => {
+      if (hintKey === key) setHint("Couldn't fetch a hint — check the connection.", false, true);
+    });
+}
 
 /** Status line content: text plus (for turn messages) the mover's mark. */
 function statusInfo(): { text: string; mark: Player | null } {
@@ -294,8 +362,7 @@ wireSeg("starter", (btn) => {
 wireSeg("hints", (btn) => {
   hintsEnabled = btn.dataset.hints === "on";
   localStorage.setItem("ox:hints", hintsEnabled ? "on" : "off");
-  if (!hintsEnabled) closeHint();
-  updateHintButton();
+  updateHintBar();
 });
 
 // Reflect the persisted hints toggle in its segmented control on load.
